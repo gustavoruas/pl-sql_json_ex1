@@ -1,0 +1,51 @@
+{
+  "status":"",
+  "student_data":[
+    {
+      "name":"Flash Gordon",
+      "course":"Class lesson",
+      "level":"12",
+      "def":102,
+      "collections":{
+        "books":"IGET",
+        "music":"Book of gg"
+      }
+    },
+    {
+      "name":"Edu",
+      "course":"Geography",
+      "level":"300",
+      "def":102,
+      "collections":{
+        "books":"IAs",
+        "music":"GET22"
+      }
+    },
+    {
+      "name":"Guanga",
+      "course":"Hist",
+      "level":"123",
+      "def":102,
+      "collections":{
+        "books":"Ined",
+        "music":"Ultra 77"
+      }
+    },
+    {
+      "name":"Troid",
+      "course":"Guist",
+      "level":"22",
+      "def":102,
+      "collections":[
+        {
+          "books":"Tronga 62",
+          "music":"Mob 2"
+        },
+        {
+          "books":"Tronga 12",
+          "music":"Mob 1"
+        }
+      ]
+    }
+  ]
+}
