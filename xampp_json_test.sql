@@ -100,13 +100,6 @@ BEGIN
     --Looping through elements
     FOR ind IN 1..l_json_list.count() LOOP
       
-      --verify if element is array []
-      IF l_json_list.get(2).is_array() THEN
-        
-        --gets element position
-        l_json_list.get(ind).print();
-      END IF;   
-      
       --Iterate each element to see array
       IF l_json_list.get(ind).is_object() AND NOT(l_json_list.get(ind).IS_NULL)  THEN
         
@@ -153,7 +146,7 @@ BEGIN
           
           DBMS_OUTPUT.PUT_LINE(' ELEMENT ' || ind1 || ' ' || l_json_values.get(ind1).get_type() );
          
-          --Gets the Object type element
+          --Gets the Object type element (only 1 element)
           IF (l_json_values.get(ind1).IS_OBJECT)
             AND NOT(l_json_values.get(ind1).IS_NULL) 
           THEN
@@ -169,17 +162,21 @@ BEGIN
                l_col_json := json(l_json_values.get(ind1));
                
                --Aquiring current size of collection
-               IF l_tab_collection_json.count() = 0 THEN
-                 l_tb_size:= 1;
-               ELSE
-                 l_tb_size := l_tab_collection_json.count();
-               END IF;  
+               --IF l_tab_collection_json.count() = 0 THEN
+               --  l_tb_size:= 1;
+               --ELSE
+               --  l_tb_size := l_tab_collection_json.count();
+               --END IF;  
+               l_tb_size := l_tab_collection_json.count() +1;
+               
                   
-               DBMS_OUTPUT.PUT_LINE(' **count:' || l_tb_size);
+               DBMS_OUTPUT.PUT_LINE(' **l_tb_size:' || l_tb_size || ' -l_tab_collection_json.count: ' ||l_tab_collection_json.count());
                
                --appending an element to the collection
-               l_tab_collection_json.EXTEND(1);
-               --
+               --l_tab_collection_json.EXTEND(1);
+               l_tab_collection_json.EXTEND;
+               
+               DBMS_OUTPUT.PUT_LINE(' **l_tb_size:' || l_tb_size || ' - aftEXT l_tab_collection_json.count: ' ||l_tab_collection_json.count());
                
                BEGIN
                  SELECT SEQ_TBEX1_COLLECTION_JSON.NEXTVAL INTO l_collection_id FROM DUAL;
@@ -195,7 +192,7 @@ BEGIN
                            
             END;          
           
-          --if looped element is an ARRAY
+          --if looped element is an ARRAY ( When there is more than one object)
           ELSIF (l_json_values.get(ind1).IS_ARRAY)
             AND NOT(l_json_values.get(ind1).IS_NULL) 
           THEN
@@ -204,23 +201,25 @@ BEGIN
               l_col_list json_list;
               
               l_collection_id TBEX1_COLLECTION_JSON.COLLECTION_ID%TYPE;
-              l_tb_size NUMBER;
+              l_tb_size NUMBER := 0;
                             
             BEGIN
             
               l_col_list := json_list(l_json_values.get('collections'));
             
               --Aquiring current size of collection
-              IF l_tab_collection_json.count() = 0 THEN
-                l_tb_size:= 1;
-              ELSE
-                l_tb_size := l_tab_collection_json.count();
-              END IF; 
+              --IF l_tab_collection_json.count() = 0 THEN
+              --  l_tb_size:= 1;
+              --ELSE
+              --  l_tb_size := l_tab_collection_json.count();
+              --END IF; 
               
               -- Extending the collection size
-              l_tb_size := l_tb_size + l_col_list.count();
+              --l_tb_size := l_tb_size + l_col_list.count();
+              l_tb_size := l_tab_collection_json.count() + l_col_list.count();
               l_tab_collection_json.EXTEND(l_col_list.count());
               
+              DBMS_OUTPUT.PUT_LINE(' **l_col_listA:' || l_col_list.count() || ' - l_tb_size:' ||l_tb_size || ' -l_tab_collection_json.count: ' ||l_tab_collection_json.count());
   
               FOR col1 IN 1..l_col_list.count()
               LOOP
@@ -228,10 +227,13 @@ BEGIN
                 l_col_json := json(l_col_list.get(col1));
                 
                 --Fetch ID for child line
-               BEGIN
-                 SELECT SEQ_TBEX1_COLLECTION_JSON.NEXTVAL INTO l_collection_id FROM DUAL;
-               END;
+                BEGIN
+                  SELECT SEQ_TBEX1_COLLECTION_JSON.NEXTVAL INTO l_collection_id FROM DUAL;
+                END;
                 
+                 DBMS_OUTPUT.PUT_LINE(' **l_collection_id:' || l_collection_id); 
+                
+                -- l_tb_size-(col1-1) gets the last elements Extended in the collection
                 l_tab_collection_json(l_tb_size-(col1-1)).COLLECTION_ID     := l_collection_id;
                 l_tab_collection_json(l_tb_size-(col1-1)).USER_ID           := l_user_id;
                 l_tab_collection_json(l_tb_size-(col1-1)).BOOK              := l_col_json.get('books').get_String();
@@ -274,21 +276,23 @@ BEGIN
     --INSERTS INTO TABLE child rows
     IF l_tab_collection_json.COUNT() >0 OR l_tab_collection_json IS NOT NULL THEN
     
-      --FORALL j IN l_tab_collection_json.FIRST .. l_tab_collection_json.LAST
-      --  INSERT INTO TBEX1_COLLECTION_JSON VALUES l_tab_collection_json(j);
+      FORALL j IN l_tab_collection_json.FIRST .. l_tab_collection_json.LAST
+        INSERT INTO TBEX1_COLLECTION_JSON VALUES l_tab_collection_json(j);
     
-      dbms_output.put_line('****Printing l_tab_collection_json:');
-      FOR j IN 1..l_tab_collection_json.COUNT() LOOP
-        dbms_output.put_line( 'ROW' || j ||':' ||       
-          l_tab_collection_json(j).COLLECTION_ID     ||' - '||
-          l_tab_collection_json(j).USER_ID           ||' - '||
-          l_tab_collection_json(j).BOOK              ||' - '||
-          l_tab_collection_json(j).music             ||' - '||
-          l_tab_collection_json(j).ID_LAST_UPDATED   ||' - '||
-          l_tab_collection_json(j).DTE_LAST_UPDATED 
-        );
-        
-      END LOOP;
+      
+      --Printing Type for viewing population
+      --dbms_output.put_line('****Printing l_tab_collection_json:');
+      --FOR j IN 1..l_tab_collection_json.COUNT() LOOP
+      --  dbms_output.put_line( 'ROW' || j ||':' ||       
+      --    l_tab_collection_json(j).COLLECTION_ID     ||' - '||
+      --    l_tab_collection_json(j).USER_ID           ||' - '||
+      --    l_tab_collection_json(j).BOOK              ||' - '||
+      --    l_tab_collection_json(j).music             ||' - '||
+      --    l_tab_collection_json(j).ID_LAST_UPDATED   ||' - '||
+      --    l_tab_collection_json(j).DTE_LAST_UPDATED 
+      --  );
+      --  
+      --END LOOP; 
 
     END IF;
     
